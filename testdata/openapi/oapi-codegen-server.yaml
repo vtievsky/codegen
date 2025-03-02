@@ -1,0 +1,10 @@
+# oapi-codegen.yaml
+
+package: httpserver
+output: openapi/gen/http-server/http-server.go
+
+generate:
+  strict-server: true
+  echo-server: true
+  embedded-spec: true
+  models: true
