@@ -1,18 +1,22 @@
 package main
 
 import (
+	"time"
+
+	"github.com/vtievsky/codegen-svc/internal/config"
 	genhttpserver "github.com/vtievsky/codegen-svc/internal/services/gen-http-server"
 	"github.com/vtievsky/golibs/runtime/logger"
-	"go.uber.org/zap"
 )
 
 func main() {
-	srv := genhttpserver.New()
-	_ = srv.Stop()
+	cfg := config.New()
+	logger := logger.CreateZapLogger(cfg.Debug, cfg.Log.EnableStacktrace)
 
-	l := logger.CreateZapLogger(true, true)
+	srv := genhttpserver.New(&genhttpserver.GenHTTPServerServiceOpts{
+		Logger: logger,
+	})
 
-	l.Info("Hello world!",
-		zap.String("msg", "kjdshkjfhsdkjf"),
-	)
+	_ = srv.Start()
+	time.Sleep(time.Second * 3)
+	srv.Stop()
 }

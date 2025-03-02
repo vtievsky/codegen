@@ -3,6 +3,7 @@ module github.com/vtievsky/codegen-svc
 go 1.24.0
 
 require (
+	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/vtievsky/golibs v1.0.0
 	go.uber.org/zap v1.27.0
 )
