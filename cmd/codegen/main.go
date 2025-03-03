@@ -67,12 +67,12 @@ func main() {
 		log.Fatal(err)
 	}
 
-	resp, err := cli.UploadSpecHttpWithResponse(ctx, clienthttp.UploadSpecHttpRequest{
+	_, err = cli.UploadSpecHttpWithResponse(ctx, clienthttp.UploadSpecHttpRequest{
 		Name: "codegen",
 		Spec: data,
 	})
 	if err != nil {
-		log.Fatal(err, resp.Status())
+		log.Fatal(err)
 	}
 
 	respCli, err := cli.GenerateSpecServerHttpWithResponse(ctx, &clienthttp.GenerateSpecServerHttpParams{
