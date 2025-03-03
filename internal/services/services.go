@@ -1,9 +1,12 @@
-package service
+package services
+
+import "context"
 
 type SvcLayer struct {
-	HTTPServer HTTPServer
+	GenHTTPServer GenHTTPServer
 }
 
-type HTTPServer interface {
-	GenServer(spec []byte) ([]byte, error)
+type GenHTTPServer interface {
+	Generate(ctx context.Context, serverName string) ([]byte, error)
+	UploadSpec(ctx context.Context, serverName string, data []byte) error
 }

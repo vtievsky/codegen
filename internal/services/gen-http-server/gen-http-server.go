@@ -82,13 +82,7 @@ func New(opts *GenHTTPServerServiceOpts) *GenHTTPServerService {
 	}
 }
 
-func (s *GenHTTPServerService) SaveSpec(ctx context.Context, serverName string, data []byte) error {
-	// TODO Добавить валидацию спецификации
-
-	return s.specStorage.Upload(ctx, serverName, data)
-}
-
-func (s *GenHTTPServerService) GenerateCode(ctx context.Context, serverName string) ([]byte, error) {
+func (s *GenHTTPServerService) Generate(ctx context.Context, serverName string) ([]byte, error) {
 	data, err := s.loadSpec(ctx, serverName)
 	if err != nil {
 		return nil, err
@@ -118,6 +112,12 @@ func (s *GenHTTPServerService) GenerateCode(ctx context.Context, serverName stri
 	}
 
 	return resp, nil
+}
+
+func (s *GenHTTPServerService) UploadSpec(ctx context.Context, serverName string, data []byte) error {
+	// TODO Добавить валидацию спецификации
+
+	return s.specStorage.Upload(ctx, serverName, data)
 }
 
 func (s *GenHTTPServerService) swaggerFromData(data []byte) (*openapi3.T, error) {

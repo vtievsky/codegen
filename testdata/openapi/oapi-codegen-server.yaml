@@ -1,7 +1,5 @@
-# oapi-codegen.yaml
-
-package: httpserver
-output: openapi/gen/http-server/http-server.go
+package: serverhttp
+output: gen/serverhttp/serverhttp.go
 
 generate:
   strict-server: true

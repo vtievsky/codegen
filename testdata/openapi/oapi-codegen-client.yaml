@@ -1,5 +1,5 @@
-package: httpclient
-output: openapi/gen/http-client/http-client.go
+package: clienthttp
+output: gen/clienthttp/clienthttp.go
 
 generate:
   models: true
