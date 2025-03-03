@@ -7,6 +7,8 @@ import (
 	"path"
 
 	"github.com/vtievsky/codegen-svc/internal/config"
+	specstorage "github.com/vtievsky/codegen-svc/internal/repositories/spec-storage"
+	specstoragehttpserver "github.com/vtievsky/codegen-svc/internal/repositories/spec-storage/http-server"
 	genhttpserver "github.com/vtievsky/codegen-svc/internal/services/gen-http-server"
 	"github.com/vtievsky/golibs/runtime/logger"
 )
@@ -17,22 +19,39 @@ const (
 )
 
 func main() {
-	cfg := config.New()
 	ctx := context.Background()
-	logger := logger.CreateZapLogger(cfg.Debug, cfg.Log.EnableStacktrace)
+	conf := config.New()
+	logger := logger.CreateZapLogger(conf.Debug, conf.Log.EnableStacktrace)
 
-	httpserver := genhttpserver.New(&genhttpserver.GenHTTPServerServiceOpts{
-		Logger: logger.Named("gen-http-server"),
+	specClient := specstorage.New(&specstorage.SpecStoreClientOpts{
+		AccessKey: conf.SpecStorage.AccessKey,
+		SecretKey: conf.SpecStorage.SecretKey,
+		URL:       conf.SpecStorage.URL,
 	})
 
-	// Клиентское приложение открывает файл спецификации
-	data, err := os.ReadFile(specPath)
-	if err != nil {
-		log.Fatal("ошибка чтения спецификации по указанному пути")
-	}
+	httpserverSpecStore := specstoragehttpserver.New(&specstoragehttpserver.SpecHTTPServerOpts{
+		Client: specClient,
+	})
+
+	httpserver := genhttpserver.New(&genhttpserver.GenHTTPServerServiceOpts{
+		Logger:      logger.Named("gen-http-server"),
+		SpecStorage: httpserverSpecStore,
+	})
+
+	// // Клиентское приложение открывает файл спецификации
+	// data, err := os.ReadFile(specPath)
+	// if err != nil {
+	// 	log.Fatal("ошибка чтения спецификации по указанному пути")
+	// }
+
+	// // Клиентское приложение "отправляет" файл спецификации серверу генерации
+	// err = httpserver.SaveSpec(ctx, "auth-id", data)
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
 
 	// Клиентское приложение "отправляет" файл спецификации серверу генерации
-	resp, err := httpserver.GenHTTPServer(ctx, data)
+	resp, err := httpserver.GenerateCode(ctx, "auth-id")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -48,6 +67,7 @@ func main() {
 
 	// Клиентское приложение сохраняет новую версию файла спецификации
 	outputFile := path.Join(outputDir, "serverhttp.go")
+
 	err = os.WriteFile(outputFile, resp, os.ModePerm)
 	if err != nil {
 		log.Fatal(err)

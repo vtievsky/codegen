@@ -7,6 +7,7 @@ import (
 
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/oapi-codegen/oapi-codegen/v2/pkg/codegen"
+	specstoragehttpserver "github.com/vtievsky/codegen-svc/internal/repositories/spec-storage/http-server"
 	"go.uber.org/zap"
 )
 
@@ -59,32 +60,47 @@ var (
 	}
 )
 
-const (
-	packageName = "serverhttp"
-)
+type SpecStorage interface {
+	Upload(ctx context.Context, specname string, data []byte) error
+	Download(ctx context.Context, specName string) ([]byte, error)
+}
 
 type GenHTTPServerServiceOpts struct {
-	Logger *zap.Logger
+	Logger      *zap.Logger
+	SpecStorage SpecStorage
 }
 
 type GenHTTPServerService struct {
-	logger *zap.Logger
+	logger      *zap.Logger
+	specStorage SpecStorage
 }
 
 func New(opts *GenHTTPServerServiceOpts) *GenHTTPServerService {
 	return &GenHTTPServerService{
-		logger: opts.Logger,
+		logger:      opts.Logger,
+		specStorage: opts.SpecStorage,
 	}
 }
 
-func (s *GenHTTPServerService) GenHTTPServer(ctx context.Context, data []byte) ([]byte, error) {
+func (s *GenHTTPServerService) SaveSpec(ctx context.Context, serverName string, data []byte) error {
+	// TODO Добавить валидацию спецификации
+
+	return s.specStorage.Upload(ctx, serverName, data)
+}
+
+func (s *GenHTTPServerService) GenerateCode(ctx context.Context, serverName string) ([]byte, error) {
+	data, err := s.loadSpec(ctx, serverName)
+	if err != nil {
+		return nil, err
+	}
+
 	swagger, err := s.swaggerFromData(data)
 	if err != nil {
 		return nil, err
 	}
 
 	transportCode, err := codegen.Generate(swagger, codegen.Configuration{
-		PackageName:          packageName,
+		PackageName:          specstoragehttpserver.PackageName,
 		Generate:             generateOptions,
 		Compatibility:        compatibilityOptions,
 		OutputOptions:        outputOptions,
@@ -96,12 +112,12 @@ func (s *GenHTTPServerService) GenHTTPServer(ctx context.Context, data []byte) (
 		return nil, err
 	}
 
-	result, err := s.formatSource(transportCode)
+	resp, err := s.formatSource(transportCode)
 	if err != nil {
 		return nil, err
 	}
 
-	return result, nil
+	return resp, nil
 }
 
 func (s *GenHTTPServerService) swaggerFromData(data []byte) (*openapi3.T, error) {
@@ -117,7 +133,7 @@ func (s *GenHTTPServerService) swaggerFromData(data []byte) (*openapi3.T, error)
 }
 
 func (s *GenHTTPServerService) formatSource(src string) ([]byte, error) {
-	result, err := format.Source([]byte(src))
+	resp, err := format.Source([]byte(src))
 	if err != nil {
 		return nil, fmt.Errorf("failed to source code formatting | %w", err)
 	}
@@ -127,5 +143,9 @@ func (s *GenHTTPServerService) formatSource(src string) ([]byte, error) {
 	// 	return nil, fmt.Errorf("imports.Process error | %w", err)
 	// }
 
-	return result, nil
+	return resp, nil
+}
+
+func (s *GenHTTPServerService) loadSpec(ctx context.Context, serverName string) ([]byte, error) {
+	return s.specStorage.Download(ctx, serverName)
 }

@@ -11,10 +11,17 @@ type LogConfig struct {
 	EnableStacktrace bool `envconfig:"CODEGEN_LOG_ENABLE_STACKTRACE" default:"false"`
 }
 
+type SpecStorageConfig struct {
+	URL       string `envconfig:"CODEGEN_SPECSTORAGE_URL" required:"true"`
+	AccessKey string `envconfig:"CODEGEN_SPECSTORAGE_ACCESS_KEY" required:"true"`
+	SecretKey string `envconfig:"CODEGEN_SPECSTORAGE_SECRET_KEY" required:"true"`
+}
+
 type Config struct {
 	Debug bool `envconfig:"CODEGEN_DEBUG" default:"false"`
 
-	Log LogConfig
+	Log         LogConfig
+	SpecStorage SpecStorageConfig
 }
 
 func New() *Config {
