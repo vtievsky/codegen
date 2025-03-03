@@ -2,14 +2,11 @@ package main
 
 import (
 	"context"
-	"fmt"
-	"log"
 	"os"
-	"path"
-	"time"
+	"os/signal"
+	"syscall"
 
 	"github.com/labstack/echo/v4"
-	"github.com/vtievsky/codegen-svc/gen/clienthttp"
 	"github.com/vtievsky/codegen-svc/gen/serverhttp"
 	"github.com/vtievsky/codegen-svc/internal/config"
 	"github.com/vtievsky/codegen-svc/internal/httptransport"
@@ -18,22 +15,21 @@ import (
 	"github.com/vtievsky/codegen-svc/internal/services"
 	genhttpserver "github.com/vtievsky/codegen-svc/internal/services/gen-http-server"
 	"github.com/vtievsky/golibs/runtime/logger"
-)
-
-const (
-	specPath = "../../testdata/openapi/docs/gen-http-server.yaml"
+	"go.uber.org/zap"
 )
 
 func main() {
-	e := echo.New()
+	cfg := config.New()
 	ctx := context.Background()
-	conf := config.New()
-	logger := logger.CreateZapLogger(conf.Debug, conf.Log.EnableStacktrace)
+	logger := logger.CreateZapLogger(cfg.Debug, cfg.Log.EnableStacktrace)
+	httpSrv := echo.New()
+
+	serverCtx, cancel := context.WithCancel(ctx)
 
 	specClient := specstorage.New(&specstorage.SpecStoreClientOpts{
-		AccessKey: conf.SpecStorage.AccessKey,
-		SecretKey: conf.SpecStorage.SecretKey,
-		URL:       conf.SpecStorage.URL,
+		AccessKey: cfg.SpecStorage.AccessKey,
+		SecretKey: cfg.SpecStorage.SecretKey,
+		URL:       cfg.SpecStorage.URL,
 	})
 
 	httpserverSpecStore := specstoragehttpserver.New(&specstoragehttpserver.SpecHTTPServerOpts{
@@ -45,61 +41,60 @@ func main() {
 		SpecStorage: httpserverSpecStore,
 	})
 
-	serverhttp.RegisterHandlers(e, serverhttp.NewStrictHandler(
-		httptransport.New(&services.SvcLayer{
-			GenHTTPServer: genHTTPServerService,
-		}),
+	services := &services.SvcLayer{
+		GenHTTPServer: genHTTPServerService,
+	}
+
+	signalChannel := make(chan os.Signal, 1)
+	signal.Notify(signalChannel, syscall.SIGINT, syscall.SIGTERM)
+
+	defer signal.Stop(signalChannel) // Отмена подписки на системные события
+	defer stopApp(logger, httpSrv)
+
+	startApp(cancel, logger, httpSrv, services)
+
+	for {
+		select {
+		case <-signalChannel:
+			logger.Info("interrupted by a signal")
+
+			return
+		case <-serverCtx.Done():
+			return
+		}
+	}
+}
+
+func stopApp(logger *zap.Logger, httpSrv *echo.Echo) {
+	defer func(alogger *zap.Logger) {
+		alogger.Debug("sync zap logs")
+
+		_ = alogger.Sync()
+	}(logger)
+
+	if err := httpSrv.Close(); err != nil {
+		logger.Error("failed to close http server",
+			zap.Error(err),
+		)
+	}
+}
+
+func startApp(
+	cancel context.CancelFunc,
+	logger *zap.Logger,
+	httpSrv *echo.Echo,
+	services *services.SvcLayer,
+) {
+	defer cancel()
+
+	serverhttp.RegisterHandlers(httpSrv, serverhttp.NewStrictHandler(
+		httptransport.New(services),
 		[]serverhttp.StrictMiddlewareFunc{},
 	))
 
-	go e.Start("127.0.0.1:8080")
-
-	time.Sleep(time.Second * 5)
-
-	// Клиентское приложение открывает файл спецификации
-	data, err := os.ReadFile("../../docs/openapi/swagger.yaml")
-	if err != nil {
-		log.Fatal("ошибка чтения спецификации по указанному пути")
+	if err := httpSrv.Start("127.0.0.1:8080"); err != nil {
+		logger.Fatal("error while serve http server",
+			zap.Error(err),
+		)
 	}
-
-	cli, err := clienthttp.NewClientWithResponses("http://127.0.0.1:8080")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	_, err = cli.UploadSpecHttpWithResponse(ctx, clienthttp.UploadSpecHttpRequest{
-		Name: "codegen",
-		Spec: data,
-	})
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	respCli, err := cli.GenerateSpecServerHttpWithResponse(ctx, &clienthttp.GenerateSpecServerHttpParams{
-		Name: "codegen",
-	})
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	outputDir := fmt.Sprintf("./tmp/%s", "codegen")
-
-	// Клиентское приложение удаляет предыдущую версию файла спецификации
-	if err := os.RemoveAll(outputDir); err != nil {
-		log.Fatal(err)
-	}
-
-	if err := os.MkdirAll(outputDir, os.ModePerm); err != nil {
-		log.Fatal(err)
-	}
-
-	// Клиентское приложение сохраняет новую версию файла спецификации
-	outputFile := path.Join(outputDir, "clienthttp.go")
-
-	err = os.WriteFile(outputFile, respCli.JSON200.Spec, os.ModePerm)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	log.Println("exit")
 }
