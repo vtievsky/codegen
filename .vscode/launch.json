@@ -1,0 +1,18 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Launch Codegen Service",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "${workspaceRoot}/cmd/codegen/main.go",
+            "env": {
+                "CODEGEN_SPECSTORAGE_URL": "http://127.0.0.1:9000",
+                "CODEGEN_SPECSTORAGE_ACCESS_KEY": "eqND3RJznfW3QwuTjQm7",
+                "CODEGEN_SPECSTORAGE_SECRET_KEY": "0koI8AQVOo57xqGlAbDPfuj6Du1YUhqPyJXRwDIi"
+            },
+            "args": []
+        }
+    ]
+}
