@@ -83,14 +83,16 @@ func New(opts *GenHTTPServerServiceOpts) *GenHTTPServerService {
 }
 
 func (s *GenHTTPServerService) Generate(ctx context.Context, serverName string) ([]byte, error) {
+	const op = "GenHTTPServerService.Generate"
+
 	data, err := s.loadSpec(ctx, serverName)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to load spec | %s:%w", op, err)
 	}
 
 	swagger, err := s.swaggerFromData(data)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to parse spec | %s:%w", op, err)
 	}
 
 	transportCode, err := codegen.Generate(swagger, codegen.Configuration{
@@ -103,12 +105,12 @@ func (s *GenHTTPServerService) Generate(ctx context.Context, serverName string) 
 		NoVCSVersionOverride: nil,
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to generate transport code | %s:%w", op, err)
 	}
 
 	resp, err := s.formatSource(transportCode)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to format transport code | %s:%w", op, err)
 	}
 
 	return resp, nil
@@ -135,7 +137,7 @@ func (s *GenHTTPServerService) swaggerFromData(data []byte) (*openapi3.T, error)
 func (s *GenHTTPServerService) formatSource(src string) ([]byte, error) {
 	resp, err := format.Source([]byte(src))
 	if err != nil {
-		return nil, fmt.Errorf("failed to source code formatting | %w", err)
+		return nil, err
 	}
 
 	// result, err = imports.Process(filename, result, nil)
