@@ -20,6 +20,8 @@ type SpecStorageConfig struct {
 type Config struct {
 	Debug bool `envconfig:"CODEGEN_DEBUG" default:"false"`
 
+	Port int `envconfig:"CODEGEN_PORT" default:"8080"`
+
 	Log         LogConfig
 	SpecStorage SpecStorageConfig
 }

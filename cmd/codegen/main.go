@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
@@ -51,7 +52,7 @@ func main() {
 	defer signal.Stop(signalChannel) // Отмена подписки на системные события
 	defer stopApp(logger, httpSrv)
 
-	startApp(cancel, logger, httpSrv, services)
+	startApp(cancel, logger, httpSrv, services, cfg.Port)
 
 	for {
 		select {
@@ -84,6 +85,7 @@ func startApp(
 	logger *zap.Logger,
 	httpSrv *echo.Echo,
 	services *services.SvcLayer,
+	port int,
 ) {
 	defer cancel()
 
@@ -92,7 +94,9 @@ func startApp(
 		[]serverhttp.StrictMiddlewareFunc{},
 	))
 
-	if err := httpSrv.Start("127.0.0.1:8080"); err != nil {
+	address := fmt.Sprintf(":%d", port)
+
+	if err := httpSrv.Start(address); err != nil {
 		logger.Fatal("error while serve http server",
 			zap.Error(err),
 		)
