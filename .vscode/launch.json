@@ -8,9 +8,9 @@
             "mode": "auto",
             "program": "${workspaceRoot}/cmd/codegen/main.go",
             "env": {
-                "CODEGEN_SPECSTORAGE_URL": "http://127.0.0.1:9000",
-                "CODEGEN_SPECSTORAGE_ACCESS_KEY": "eqND3RJznfW3QwuTjQm7",
-                "CODEGEN_SPECSTORAGE_SECRET_KEY": "0koI8AQVOo57xqGlAbDPfuj6Du1YUhqPyJXRwDIi"
+                "CODEGEN_SPECSTORAGE_URL": "http://127.0.0.1:9010",
+                "CODEGEN_SPECSTORAGE_ACCESS_KEY": "FGMR1KtwWd7nDfFqRwai",
+                "CODEGEN_SPECSTORAGE_SECRET_KEY": "6hLaA6I9yyp2yzS4q49Irb5ErY1KdTza5GoIQXKW"
             },
             "args": []
         }
