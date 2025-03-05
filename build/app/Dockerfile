@@ -20,7 +20,7 @@ ARG VERSION_PACKAGE_PATH="0.0.1"
 WORKDIR /app
 ADD . /app
 
-COPY build/app/migrations /out/migrations
+# COPY build/app/migrations /out/migrations
 
 RUN --mount=target=. \
     --mount=type=cache,target=/root/.cache/go-build \
