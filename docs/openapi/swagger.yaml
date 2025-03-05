@@ -7,7 +7,7 @@ info:
 servers:
   - url: /
 paths:
-  /v1/specs/:
+  /v1/spechttpserver/:
     get:
       description: Генерация спецификации сервера http
       operationId: GenerateSpecServerHttp
@@ -23,13 +23,37 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/GenerateSpecServerHttpResponse200"
+                $ref: "#/components/schemas/GenerateSpecHttpResponse200"
           description: OK
         "500":
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/GenerateSpecServerHttpResponse500"
+                $ref: "#/components/schemas/GenerateSpecHttpResponse500"
+          description: Internal Server Error
+  /v1/spechttpclient/:
+    get:
+      description: Генерация спецификации клиента http
+      operationId: GenerateSpecClientHttp
+      parameters:
+        - name: name
+          description: Наименование сервера спецификации для которого генерируется клиент
+          in: query
+          schema:
+            type: string
+          required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenerateSpecHttpResponse200"
+          description: OK
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenerateSpecHttpResponse500"
           description: Internal Server Error
     post:
       description: Выгрузка спецификации сервера http
@@ -111,7 +135,7 @@ components:
       required:
         - name
         - spec
-    GenerateSpecServerHttpResponse200:
+    GenerateSpecHttpResponse200:
       type: object
       properties:
         status:
@@ -124,7 +148,7 @@ components:
       required:
         - status
         - spec
-    GenerateSpecServerHttpResponse500:
+    GenerateSpecHttpResponse500:
       type: object
       properties:
         status:
