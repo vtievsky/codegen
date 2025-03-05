@@ -14,6 +14,7 @@ import (
 	specstorage "github.com/vtievsky/codegen-svc/internal/repositories/spec-storage/client"
 	specstoragehttpserver "github.com/vtievsky/codegen-svc/internal/repositories/spec-storage/http-server"
 	"github.com/vtievsky/codegen-svc/internal/services"
+	genhttpclient "github.com/vtievsky/codegen-svc/internal/services/gen-http-client"
 	genhttpserver "github.com/vtievsky/codegen-svc/internal/services/gen-http-server"
 	"github.com/vtievsky/golibs/runtime/logger"
 	"go.uber.org/zap"
@@ -42,8 +43,14 @@ func main() {
 		SpecStorage: httpserverSpecStore,
 	})
 
+	genHTTPClientService := genhttpclient.New(&genhttpclient.GenHTTPClientServiceOpts{
+		Logger:      logger.Named("gen-http-client"),
+		SpecStorage: httpserverSpecStore,
+	})
+
 	services := &services.SvcLayer{
 		GenHTTPServer: genHTTPServerService,
+		GenHTTPClient: genHTTPClientService,
 	}
 
 	signalChannel := make(chan os.Signal, 1)

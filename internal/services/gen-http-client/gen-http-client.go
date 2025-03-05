@@ -1,13 +1,13 @@
-package genhttpserver
+package genhttpclient
 
 import (
 	"context"
 	"fmt"
 	"go/format"
+	"strings"
 
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/oapi-codegen/oapi-codegen/v2/pkg/codegen"
-	specstoragehttpserver "github.com/vtievsky/codegen-svc/internal/repositories/spec-storage/http-server"
 	"go.uber.org/zap"
 )
 
@@ -16,14 +16,14 @@ var (
 		IrisServer:    false,
 		ChiServer:     false,
 		FiberServer:   false,
-		EchoServer:    true,
+		EchoServer:    false,
 		GinServer:     false,
 		GorillaServer: false,
 		StdHTTPServer: false,
-		Strict:        true,
-		Client:        false,
+		Strict:        false,
+		Client:        true,
 		Models:        true,
-		EmbeddedSpec:  true,
+		EmbeddedSpec:  false,
 	}
 	compatibilityOptions = codegen.CompatibilityOptions{
 		OldMergeSchemas:                    false,
@@ -65,25 +65,25 @@ type SpecStorage interface {
 	Download(ctx context.Context, specName string) ([]byte, error)
 }
 
-type GenHTTPServerServiceOpts struct {
+type GenHTTPClientServiceOpts struct {
 	Logger      *zap.Logger
 	SpecStorage SpecStorage
 }
 
-type GenHTTPServerService struct {
+type GenHTTPClientService struct {
 	logger      *zap.Logger
 	specStorage SpecStorage
 }
 
-func New(opts *GenHTTPServerServiceOpts) *GenHTTPServerService {
-	return &GenHTTPServerService{
+func New(opts *GenHTTPClientServiceOpts) *GenHTTPClientService {
+	return &GenHTTPClientService{
 		logger:      opts.Logger,
 		specStorage: opts.SpecStorage,
 	}
 }
 
-func (s *GenHTTPServerService) Generate(ctx context.Context, serverName string) ([]byte, error) {
-	const op = "GenHTTPServerService.Generate"
+func (s *GenHTTPClientService) Generate(ctx context.Context, serverName string) ([]byte, error) {
+	const op = "GenHTTPClientService.Generate"
 
 	data, err := s.loadSpec(ctx, serverName)
 	if err != nil {
@@ -95,8 +95,10 @@ func (s *GenHTTPServerService) Generate(ctx context.Context, serverName string) 
 		return nil, fmt.Errorf("failed to parse spec | %s:%w", op, err)
 	}
 
+	packageName := strings.ReplaceAll(serverName, "-", "")
+
 	transportCode, err := codegen.Generate(swagger, codegen.Configuration{
-		PackageName:          specstoragehttpserver.PackageName,
+		PackageName:          fmt.Sprintf("%shttpclient", packageName),
 		Generate:             generateOptions,
 		Compatibility:        compatibilityOptions,
 		OutputOptions:        outputOptions,
@@ -116,13 +118,7 @@ func (s *GenHTTPServerService) Generate(ctx context.Context, serverName string) 
 	return resp, nil
 }
 
-func (s *GenHTTPServerService) UploadSpec(ctx context.Context, serverName string, data []byte) error {
-	// TODO Добавить валидацию спецификации
-
-	return s.specStorage.Upload(ctx, serverName, data)
-}
-
-func (s *GenHTTPServerService) swaggerFromData(data []byte) (*openapi3.T, error) {
+func (s *GenHTTPClientService) swaggerFromData(data []byte) (*openapi3.T, error) {
 	loader := openapi3.NewLoader()
 	loader.IsExternalRefsAllowed = true
 
@@ -134,7 +130,7 @@ func (s *GenHTTPServerService) swaggerFromData(data []byte) (*openapi3.T, error)
 	return swagger, nil
 }
 
-func (s *GenHTTPServerService) formatSource(src string) ([]byte, error) {
+func (s *GenHTTPClientService) formatSource(src string) ([]byte, error) {
 	resp, err := format.Source([]byte(src))
 	if err != nil {
 		return nil, err
@@ -148,6 +144,6 @@ func (s *GenHTTPServerService) formatSource(src string) ([]byte, error) {
 	return resp, nil
 }
 
-func (s *GenHTTPServerService) loadSpec(ctx context.Context, serverName string) ([]byte, error) {
+func (s *GenHTTPClientService) loadSpec(ctx context.Context, serverName string) ([]byte, error) {
 	return s.specStorage.Download(ctx, serverName)
 }
