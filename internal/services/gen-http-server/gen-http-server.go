@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 	"go/format"
+	"strings"
 
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/oapi-codegen/oapi-codegen/v2/pkg/codegen"
-	specstoragehttpserver "github.com/vtievsky/codegen-svc/internal/repositories/spec-storage/http-server"
 	"go.uber.org/zap"
 )
 
@@ -95,8 +95,10 @@ func (s *GenHTTPServerService) Generate(ctx context.Context, serverName string) 
 		return nil, fmt.Errorf("failed to parse spec | %s:%w", op, err)
 	}
 
+	packageName := strings.ReplaceAll(serverName, "-", "")
+
 	transportCode, err := codegen.Generate(swagger, codegen.Configuration{
-		PackageName:          specstoragehttpserver.PackageName,
+		PackageName:          fmt.Sprintf("%shttpclient", packageName),
 		Generate:             generateOptions,
 		Compatibility:        compatibilityOptions,
 		OutputOptions:        outputOptions,
