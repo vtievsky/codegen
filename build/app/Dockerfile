@@ -1,4 +1,5 @@
-FROM golang:alpine AS base
+FROM golang:1.24-bookworm AS base
+
 WORKDIR /app
 
 RUN mkdir /out
@@ -35,7 +36,7 @@ RUN --mount=target=. \
 # FROM */golang-migrate:bookworm as migrator
 
 # FROM */golang-runtime:bookworm AS release
-FROM alpine AS release
+FROM golang:1.24 AS release
 
 ENV APP_NAME="codegen"
 
