@@ -27,17 +27,19 @@ type SpecStoreClient struct {
 }
 
 func New(opts *SpecStoreClientOpts) *SpecStoreClient {
-	client := s3.NewFromConfig(aws.Config{
+	client := s3.NewFromConfig(aws.Config{ //nolint:exhaustruct
 		Region:      awsRegion,
 		Credentials: credentials.NewStaticCredentialsProvider(opts.AccessKey, opts.SecretKey, ""),
-		EndpointResolverWithOptions: aws.EndpointResolverWithOptionsFunc(func(service string, region string, options ...any) (aws.Endpoint, error) {
-			return aws.Endpoint{
-				PartitionID:       "aws",
-				SigningRegion:     awsRegion,
-				URL:               opts.URL,
-				HostnameImmutable: true,
-			}, nil
-		}),
+		EndpointResolverWithOptions: aws.EndpointResolverWithOptionsFunc( //nolint:staticcheck
+			func(service string, region string, options ...any) (aws.Endpoint, error) { //nolint:staticcheck
+				return aws.Endpoint{ //nolint:exhaustruct,staticcheck
+					PartitionID:       "aws",
+					SigningRegion:     awsRegion,
+					URL:               opts.URL,
+					HostnameImmutable: true,
+				}, nil
+			},
+		),
 	})
 
 	return &SpecStoreClient{
@@ -48,7 +50,7 @@ func New(opts *SpecStoreClientOpts) *SpecStoreClient {
 func (s *SpecStoreClient) Upload(ctx context.Context, specBucket, specName string, data []byte) error {
 	uploader := manager.NewUploader(s.client)
 
-	if _, err := uploader.Upload(ctx, &s3.PutObjectInput{
+	if _, err := uploader.Upload(ctx, &s3.PutObjectInput{ //nolint:exhaustruct
 		Bucket: aws.String(specBucket),
 		Key:    aws.String(specName),
 		Body:   bytes.NewReader(data),
@@ -64,7 +66,7 @@ func (s *SpecStoreClient) Download(ctx context.Context, specBucket, specName str
 	specWriter := manager.NewWriteAtBuffer(buf)
 	downloader := manager.NewDownloader(s.client)
 
-	if _, err := downloader.Download(ctx, specWriter, &s3.GetObjectInput{
+	if _, err := downloader.Download(ctx, specWriter, &s3.GetObjectInput{ //nolint:exhaustruct
 		Bucket: aws.String(specBucket),
 		Key:    aws.String(specName),
 	}); err != nil {

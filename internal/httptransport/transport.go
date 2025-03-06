@@ -17,7 +17,10 @@ func New(services *services.SvcLayer) *Transport {
 	}
 }
 
-func (s *Transport) GenerateSpecServerHttp(ctx context.Context, request serverhttp.GenerateSpecServerHttpRequestObject) (serverhttp.GenerateSpecServerHttpResponseObject, error) {
+func (s *Transport) GenerateSpecServerHttp(
+	ctx context.Context,
+	request serverhttp.GenerateSpecServerHttpRequestObject,
+) (serverhttp.GenerateSpecServerHttpResponseObject, error) {
 	data, err := s.services.GenHTTPServer.Generate(ctx, request.Params.Name)
 	if err != nil {
 		return serverhttp.GenerateSpecServerHttp500JSONResponse{
@@ -25,7 +28,7 @@ func (s *Transport) GenerateSpecServerHttp(ctx context.Context, request serverht
 				Code:        serverhttp.Error,
 				Description: err.Error(),
 			},
-		}, nil
+		}, err //nolint:wrapcheck
 	}
 
 	return serverhttp.GenerateSpecServerHttp200JSONResponse{
@@ -34,10 +37,13 @@ func (s *Transport) GenerateSpecServerHttp(ctx context.Context, request serverht
 			Code:        serverhttp.Ok,
 			Description: "",
 		},
-	}, nil
+	}, err //nolint:wrapcheck
 }
 
-func (s *Transport) GenerateSpecClientHttp(ctx context.Context, request serverhttp.GenerateSpecClientHttpRequestObject) (serverhttp.GenerateSpecClientHttpResponseObject, error) {
+func (s *Transport) GenerateSpecClientHttp(
+	ctx context.Context,
+	request serverhttp.GenerateSpecClientHttpRequestObject,
+) (serverhttp.GenerateSpecClientHttpResponseObject, error) {
 	data, err := s.services.GenHTTPClient.Generate(ctx, request.Params.Name)
 	if err != nil {
 		return serverhttp.GenerateSpecClientHttp500JSONResponse{
@@ -45,7 +51,7 @@ func (s *Transport) GenerateSpecClientHttp(ctx context.Context, request serverht
 				Code:        serverhttp.Error,
 				Description: err.Error(),
 			},
-		}, nil
+		}, err //nolint:wrapcheck
 	}
 
 	return serverhttp.GenerateSpecClientHttp200JSONResponse{
@@ -54,10 +60,13 @@ func (s *Transport) GenerateSpecClientHttp(ctx context.Context, request serverht
 			Code:        serverhttp.Ok,
 			Description: "",
 		},
-	}, nil
+	}, err //nolint:wrapcheck
 }
 
-func (s *Transport) UploadSpecHttp(ctx context.Context, request serverhttp.UploadSpecHttpRequestObject) (serverhttp.UploadSpecHttpResponseObject, error) {
+func (s *Transport) UploadSpecHttp(
+	ctx context.Context,
+	request serverhttp.UploadSpecHttpRequestObject,
+) (serverhttp.UploadSpecHttpResponseObject, error) {
 	err := s.services.GenHTTPServer.UploadSpec(ctx, request.Body.Name, request.Body.Spec)
 	if err != nil {
 		return serverhttp.UploadSpecHttp500JSONResponse{
@@ -65,7 +74,7 @@ func (s *Transport) UploadSpecHttp(ctx context.Context, request serverhttp.Uploa
 				Code:        serverhttp.Error,
 				Description: err.Error(),
 			},
-		}, nil
+		}, err //nolint:wrapcheck
 	}
 
 	return serverhttp.UploadSpecHttp200JSONResponse{

@@ -26,9 +26,9 @@ func New(opts *SpecHTTPServerOpts) *SpecHTTPServer {
 }
 
 func (s *SpecHTTPServer) Upload(ctx context.Context, serverName string, data []byte) error {
-	return s.client.Upload(ctx, PackageName, serverName, data)
+	return s.client.Upload(ctx, PackageName, serverName, data) //nolint:wrapcheck
 }
 
 func (s *SpecHTTPServer) Download(ctx context.Context, serverName string) ([]byte, error) {
-	return s.client.Download(ctx, PackageName, serverName)
+	return s.client.Download(ctx, PackageName, serverName) //nolint:wrapcheck
 }
