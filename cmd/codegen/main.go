@@ -104,7 +104,7 @@ func startApp(
 	address := fmt.Sprintf(":%d", port)
 
 	if err := httpSrv.Start(address); err != nil {
-		logger.Fatal("error while serve http server",
+		logger.Error("error while serve http server",
 			zap.Error(err),
 		)
 	}
