@@ -7,14 +7,14 @@ info:
 servers:
   - url: /
 paths:
-  /v1/spechttpservers/:
+  /v1/spechttpservers/{name}:
     get:
       description: Генерация спецификации сервера http
       operationId: GenerateSpecServerHttp
       parameters:
         - name: name
           description: Наименование сервера спецификации
-          in: query
+          in: path
           schema:
             type: string
           required: true
@@ -31,6 +31,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/GenerateSpecHttpResponse500"
           description: Internal Server Error
+  /v1/spechttpservers/:
     post:
       description: Выгрузка спецификации сервера http
       operationId: UploadSpecHttp
@@ -56,14 +57,14 @@ paths:
           description: Internal Server Error
       security:
         - bearer: []
-  /v1/spechttpclients/:
+  /v1/spechttpclients/{name}:
     get:
       description: Генерация спецификации клиента http
       operationId: GenerateSpecClientHttp
       parameters:
         - name: name
           description: Наименование сервера спецификации для которого генерируется клиент
-          in: query
+          in: path
           schema:
             type: string
           required: true

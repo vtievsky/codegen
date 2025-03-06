@@ -84,32 +84,20 @@ type UploadSpecHttpResponse500 struct {
 	Status ResponseStatusError `json:"status"`
 }
 
-// GenerateSpecClientHttpParams defines parameters for GenerateSpecClientHttp.
-type GenerateSpecClientHttpParams struct {
-	// Name Наименование сервера спецификации для которого генерируется клиент
-	Name string `form:"name" json:"name"`
-}
-
-// GenerateSpecServerHttpParams defines parameters for GenerateSpecServerHttp.
-type GenerateSpecServerHttpParams struct {
-	// Name Наименование сервера спецификации
-	Name string `form:"name" json:"name"`
-}
-
 // UploadSpecHttpJSONRequestBody defines body for UploadSpecHttp for application/json ContentType.
 type UploadSpecHttpJSONRequestBody = UploadSpecHttpRequest
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
 
-	// (GET /v1/spechttpclients/)
-	GenerateSpecClientHttp(ctx echo.Context, params GenerateSpecClientHttpParams) error
-
-	// (GET /v1/spechttpservers/)
-	GenerateSpecServerHttp(ctx echo.Context, params GenerateSpecServerHttpParams) error
+	// (GET /v1/spechttpclients/{name})
+	GenerateSpecClientHttp(ctx echo.Context, name string) error
 
 	// (POST /v1/spechttpservers/)
 	UploadSpecHttp(ctx echo.Context) error
+
+	// (GET /v1/spechttpservers/{name})
+	GenerateSpecServerHttp(ctx echo.Context, name string) error
 }
 
 // ServerInterfaceWrapper converts echo contexts to parameters.
@@ -120,36 +108,16 @@ type ServerInterfaceWrapper struct {
 // GenerateSpecClientHttp converts echo context to params.
 func (w *ServerInterfaceWrapper) GenerateSpecClientHttp(ctx echo.Context) error {
 	var err error
+	// ------------- Path parameter "name" -------------
+	var name string
 
-	// Parameter object where we will unmarshal all parameters from the context
-	var params GenerateSpecClientHttpParams
-	// ------------- Required query parameter "name" -------------
-
-	err = runtime.BindQueryParameter("form", true, true, "name", ctx.QueryParams(), &params.Name)
+	err = runtime.BindStyledParameterWithOptions("simple", "name", ctx.Param("name"), &name, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter name: %s", err))
 	}
 
 	// Invoke the callback with all the unmarshaled arguments
-	err = w.Handler.GenerateSpecClientHttp(ctx, params)
-	return err
-}
-
-// GenerateSpecServerHttp converts echo context to params.
-func (w *ServerInterfaceWrapper) GenerateSpecServerHttp(ctx echo.Context) error {
-	var err error
-
-	// Parameter object where we will unmarshal all parameters from the context
-	var params GenerateSpecServerHttpParams
-	// ------------- Required query parameter "name" -------------
-
-	err = runtime.BindQueryParameter("form", true, true, "name", ctx.QueryParams(), &params.Name)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter name: %s", err))
-	}
-
-	// Invoke the callback with all the unmarshaled arguments
-	err = w.Handler.GenerateSpecServerHttp(ctx, params)
+	err = w.Handler.GenerateSpecClientHttp(ctx, name)
 	return err
 }
 
@@ -161,6 +129,22 @@ func (w *ServerInterfaceWrapper) UploadSpecHttp(ctx echo.Context) error {
 
 	// Invoke the callback with all the unmarshaled arguments
 	err = w.Handler.UploadSpecHttp(ctx)
+	return err
+}
+
+// GenerateSpecServerHttp converts echo context to params.
+func (w *ServerInterfaceWrapper) GenerateSpecServerHttp(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "name" -------------
+	var name string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "name", ctx.Param("name"), &name, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter name: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.GenerateSpecServerHttp(ctx, name)
 	return err
 }
 
@@ -192,14 +176,14 @@ func RegisterHandlersWithBaseURL(router EchoRouter, si ServerInterface, baseURL 
 		Handler: si,
 	}
 
-	router.GET(baseURL+"/v1/spechttpclients/", wrapper.GenerateSpecClientHttp)
-	router.GET(baseURL+"/v1/spechttpservers/", wrapper.GenerateSpecServerHttp)
+	router.GET(baseURL+"/v1/spechttpclients/:name", wrapper.GenerateSpecClientHttp)
 	router.POST(baseURL+"/v1/spechttpservers/", wrapper.UploadSpecHttp)
+	router.GET(baseURL+"/v1/spechttpservers/:name", wrapper.GenerateSpecServerHttp)
 
 }
 
 type GenerateSpecClientHttpRequestObject struct {
-	Params GenerateSpecClientHttpParams
+	Name string `json:"name"`
 }
 
 type GenerateSpecClientHttpResponseObject interface {
@@ -218,32 +202,6 @@ func (response GenerateSpecClientHttp200JSONResponse) VisitGenerateSpecClientHtt
 type GenerateSpecClientHttp500JSONResponse GenerateSpecHttpResponse500
 
 func (response GenerateSpecClientHttp500JSONResponse) VisitGenerateSpecClientHttpResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(500)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-type GenerateSpecServerHttpRequestObject struct {
-	Params GenerateSpecServerHttpParams
-}
-
-type GenerateSpecServerHttpResponseObject interface {
-	VisitGenerateSpecServerHttpResponse(w http.ResponseWriter) error
-}
-
-type GenerateSpecServerHttp200JSONResponse GenerateSpecHttpResponse200
-
-func (response GenerateSpecServerHttp200JSONResponse) VisitGenerateSpecServerHttpResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(200)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-type GenerateSpecServerHttp500JSONResponse GenerateSpecHttpResponse500
-
-func (response GenerateSpecServerHttp500JSONResponse) VisitGenerateSpecServerHttpResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(500)
 
@@ -276,17 +234,43 @@ func (response UploadSpecHttp500JSONResponse) VisitUploadSpecHttpResponse(w http
 	return json.NewEncoder(w).Encode(response)
 }
 
+type GenerateSpecServerHttpRequestObject struct {
+	Name string `json:"name"`
+}
+
+type GenerateSpecServerHttpResponseObject interface {
+	VisitGenerateSpecServerHttpResponse(w http.ResponseWriter) error
+}
+
+type GenerateSpecServerHttp200JSONResponse GenerateSpecHttpResponse200
+
+func (response GenerateSpecServerHttp200JSONResponse) VisitGenerateSpecServerHttpResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GenerateSpecServerHttp500JSONResponse GenerateSpecHttpResponse500
+
+func (response GenerateSpecServerHttp500JSONResponse) VisitGenerateSpecServerHttpResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
 
-	// (GET /v1/spechttpclients/)
+	// (GET /v1/spechttpclients/{name})
 	GenerateSpecClientHttp(ctx context.Context, request GenerateSpecClientHttpRequestObject) (GenerateSpecClientHttpResponseObject, error)
-
-	// (GET /v1/spechttpservers/)
-	GenerateSpecServerHttp(ctx context.Context, request GenerateSpecServerHttpRequestObject) (GenerateSpecServerHttpResponseObject, error)
 
 	// (POST /v1/spechttpservers/)
 	UploadSpecHttp(ctx context.Context, request UploadSpecHttpRequestObject) (UploadSpecHttpResponseObject, error)
+
+	// (GET /v1/spechttpservers/{name})
+	GenerateSpecServerHttp(ctx context.Context, request GenerateSpecServerHttpRequestObject) (GenerateSpecServerHttpResponseObject, error)
 }
 
 type StrictHandlerFunc = strictecho.StrictEchoHandlerFunc
@@ -302,10 +286,10 @@ type strictHandler struct {
 }
 
 // GenerateSpecClientHttp operation middleware
-func (sh *strictHandler) GenerateSpecClientHttp(ctx echo.Context, params GenerateSpecClientHttpParams) error {
+func (sh *strictHandler) GenerateSpecClientHttp(ctx echo.Context, name string) error {
 	var request GenerateSpecClientHttpRequestObject
 
-	request.Params = params
+	request.Name = name
 
 	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
 		return sh.ssi.GenerateSpecClientHttp(ctx.Request().Context(), request.(GenerateSpecClientHttpRequestObject))
@@ -320,31 +304,6 @@ func (sh *strictHandler) GenerateSpecClientHttp(ctx echo.Context, params Generat
 		return err
 	} else if validResponse, ok := response.(GenerateSpecClientHttpResponseObject); ok {
 		return validResponse.VisitGenerateSpecClientHttpResponse(ctx.Response())
-	} else if response != nil {
-		return fmt.Errorf("unexpected response type: %T", response)
-	}
-	return nil
-}
-
-// GenerateSpecServerHttp operation middleware
-func (sh *strictHandler) GenerateSpecServerHttp(ctx echo.Context, params GenerateSpecServerHttpParams) error {
-	var request GenerateSpecServerHttpRequestObject
-
-	request.Params = params
-
-	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
-		return sh.ssi.GenerateSpecServerHttp(ctx.Request().Context(), request.(GenerateSpecServerHttpRequestObject))
-	}
-	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "GenerateSpecServerHttp")
-	}
-
-	response, err := handler(ctx, request)
-
-	if err != nil {
-		return err
-	} else if validResponse, ok := response.(GenerateSpecServerHttpResponseObject); ok {
-		return validResponse.VisitGenerateSpecServerHttpResponse(ctx.Response())
 	} else if response != nil {
 		return fmt.Errorf("unexpected response type: %T", response)
 	}
@@ -380,24 +339,49 @@ func (sh *strictHandler) UploadSpecHttp(ctx echo.Context) error {
 	return nil
 }
 
+// GenerateSpecServerHttp operation middleware
+func (sh *strictHandler) GenerateSpecServerHttp(ctx echo.Context, name string) error {
+	var request GenerateSpecServerHttpRequestObject
+
+	request.Name = name
+
+	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.GenerateSpecServerHttp(ctx.Request().Context(), request.(GenerateSpecServerHttpRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GenerateSpecServerHttp")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(GenerateSpecServerHttpResponseObject); ok {
+		return validResponse.VisitGenerateSpecServerHttpResponse(ctx.Response())
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"H4sIAAAAAAAC/+yWzU7bShTHX8U69y4tEu4VG+/uraqCuqBq1BXKwjgHMCT2MB4jRchSQqtuWCC121ZV",
-	"38AFAhEf5hXOvFF1xk5CEif0g6abrmzNx5n/nPn9z8wheGFLhAEGKgLnECJvB1uu+X2GAUpXYU2gt6qU",
-	"eImRCIMI/6lWuVvIUKBUPubzBHr8bWDkSV8oPwzAAfpMGZ1TT3fogvp0Qxn1LN2lO+rpt9TXb6hPV5Ty",
-	"P/XBhq1QtlwFDmy2FYINqi0QHIiU9INtSGyIlKtis+DfErfAgb8qI/2VQnxloLRmRq/vQZLYIHE/9iU2",
-	"wNkYhLFz2fXhQuHmLnqKF5q1+ZXSzf+AqqdShnKWsDJFZdOnlHhhA/mLQdzieGiG1UsyOXZQh5P9E7JM",
-	"2PE5D0tc33tYX7i3MHGvRDN0G6Pz3I8xUtMKA7eFJSB/pJQu6ZRSuqU+9Sy60x3q0zVldEE9btQnM8jW",
-	"JxZdUaaPKNMdyuiMMotO9TGd6Y5+TReUUk8f6a4+KSV+EcaayKjJwRxzTKZyXl14VMN+u5jf5VM+MfRi",
-	"6at2jePlC2+iK1EO6ytPKJqGAXaUEpDwfD/YCnOvBMr1GNFJRwB9YGQYAX1s0TldM3wdSukLc6aPLd21",
-	"/nuxZrE1tjHgVXzV5GWKFu4FGw5QRnnE5aUqJzMUGLjCBwf+XaouLYMNwlU7Zg+Vg+UKE8FCvaZvUsbt",
-	"26hK+HxvTMF8Djwwi042xzV7im71EaWWSYRRIl2OttYAZ6wcPzGLr+bDhCvdFiqUETgbpa5ld7CW7J57",
-	"dddIO80FzpGWp3bavmfD7fWNiQsDj+0F+CjBgf0YZRvsorIMzDWiSckY7eLiLat2dR6cI2kOovAZ44GB",
-	"yb0rRNP3TLYqu1FeM0fx5rE+7443MI4ndP05Q7KyAAEr5QLWAoUycJtWDeUBSmvgTh55H9DIdD8SoBO0",
-	"PAhorm0RgP5BbIGI2SDCqAyld8O7/JKP5udAGr/OilPESP0fNtqPlpLyt1BJMugTpeZiuTElrsPXzSWl",
-	"5vWT6S6lU5glvxCl2e+OhYA0+6XxHRiN3gemHgxeBhv1pJ7kvaZymc5YNsGBCiT15GsAAAD//8f4mieo",
-	"DQAA",
+	"H4sIAAAAAAAC/+yVz07jVhTGX8U67dLCoRUb79qqKqgLqkZdoSyMcwBDYl+ub5CiyFJCq25YILXbGY3m",
+	"DTxAIOKPeYVz32h0rp2EJHZgRkxmM6tEvv++e87v+24P/KgtohBDFYPbg9g/wLZn/v6GIUpPYV2gv6mU",
+	"+BNjEYUx/lCr8bCQkUCpAszXCfT5t4mxLwOhgigEF+g9ZXRFQ92naxrRPWU0tPSAHmmo/6WR/odGdEsp",
+	"/6cR2LAXybanwIXdrkKwQXUFgguxkkG4D4kNsfJUxxz4vcQ9cOE7Z6rfKcQ7Y6V1M3v7CJLEBonHnUBi",
+	"E9yd8TZ2LrsxOSjaPURf8UFVl98ovfxnqPpVykhWCStTVLZ8QYkfNZF/Mey0eT800xollZxpVG9+fE6W",
+	"2XZ2zfMSt4+e1xcdrUzcX6IVec1pP487GKtFhaHXxhKQ31JKN3RBKT3QiIYWPeo+jeiOMrqmIX/U5xVk",
+	"63OLbinTp5TpPmV0SZlFF/qMLnVf/03XlNJQn+qBPi8lfhXGmquoqcESc8yXclkuvKphXy7ma/mUO4Z+",
+	"RwaqW+f98oN30ZMoJ/nKC4pPkw0OlBKQ8Pog3Ityr4TK8xnReUcAvWFkGAF9ZtEV3TF8fUrpA3Omzyw9",
+	"sH76Y8tia+xjyKcEqsXHFF94FGw4QRnnO66v1biYkcDQEwG48ONabW0dbBCeOjB3cE7WHSaChfqtwJSs",
+	"x6QkPLqPqoTS/401mNKxE6oYZYvcsbPoQZ9SaplyGD3S4922muDOhPIvRsJmPk140mujQhmDu1PqXfYI",
+	"a8meeFgPjLSLXOASaXmBF018ObneyFi5sPHMXYAbCq6pI9hFvIwdNkVKyQ7axetbFnkNnpxzabpRmI0Z",
+	"wdCU3hOiFfimWM5hnAfndL9lwC976A2Rs/Xc/p1J2ViBgI1yAVuhQhl6LauO8gSlNbYoz3xKaWyGY8cE",
+	"QRSXAfrfJIZvuOHVDMyxUornbBIV7cVY/Rw1u69Wq/JnrKRK9I5Skwn3hss+J8UNpebhyvSA0gX+ki/I",
+	"WPWTsRLCqh+JT+BrGu0mZcahvtNIGlXovWJAvoTAp0bKxa8iIL9F3AojzlBo4DKd7MgWuOBA0kg+BgAA",
+	"//9iTyT9yw0AAA==",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

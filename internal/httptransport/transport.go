@@ -21,14 +21,14 @@ func (s *Transport) GenerateSpecServerHttp(
 	ctx context.Context,
 	request serverhttp.GenerateSpecServerHttpRequestObject,
 ) (serverhttp.GenerateSpecServerHttpResponseObject, error) {
-	data, err := s.services.GenHTTPServer.Generate(ctx, request.Params.Name)
+	data, err := s.services.GenHTTPServer.Generate(ctx, request.Name)
 	if err != nil {
-		return serverhttp.GenerateSpecServerHttp500JSONResponse{
+		return serverhttp.GenerateSpecServerHttp500JSONResponse{ //nolint:nilerr
 			Status: serverhttp.ResponseStatusError{
 				Code:        serverhttp.Error,
 				Description: err.Error(),
 			},
-		}, err //nolint:wrapcheck
+		}, nil
 	}
 
 	return serverhttp.GenerateSpecServerHttp200JSONResponse{
@@ -44,14 +44,14 @@ func (s *Transport) GenerateSpecClientHttp(
 	ctx context.Context,
 	request serverhttp.GenerateSpecClientHttpRequestObject,
 ) (serverhttp.GenerateSpecClientHttpResponseObject, error) {
-	data, err := s.services.GenHTTPClient.Generate(ctx, request.Params.Name)
+	data, err := s.services.GenHTTPClient.Generate(ctx, request.Name)
 	if err != nil {
-		return serverhttp.GenerateSpecClientHttp500JSONResponse{
+		return serverhttp.GenerateSpecClientHttp500JSONResponse{ //nolint:nilerr
 			Status: serverhttp.ResponseStatusError{
 				Code:        serverhttp.Error,
 				Description: err.Error(),
 			},
-		}, err //nolint:wrapcheck
+		}, nil
 	}
 
 	return serverhttp.GenerateSpecClientHttp200JSONResponse{
@@ -69,12 +69,12 @@ func (s *Transport) UploadSpecHttp(
 ) (serverhttp.UploadSpecHttpResponseObject, error) {
 	err := s.services.GenHTTPServer.UploadSpec(ctx, request.Body.Name, request.Body.Spec)
 	if err != nil {
-		return serverhttp.UploadSpecHttp500JSONResponse{
+		return serverhttp.UploadSpecHttp500JSONResponse{ //nolint:nilerr
 			Status: serverhttp.ResponseStatusError{
 				Code:        serverhttp.Error,
 				Description: err.Error(),
 			},
-		}, err //nolint:wrapcheck
+		}, nil
 	}
 
 	return serverhttp.UploadSpecHttp200JSONResponse{
