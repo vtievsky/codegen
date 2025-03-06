@@ -59,7 +59,7 @@ func main() {
 	defer signal.Stop(signalChannel) // Отмена подписки на системные события
 	defer stopApp(logger, httpSrv)
 
-	startApp(cancel, logger, httpSrv, services, cfg.Port)
+	go startApp(cancel, logger, httpSrv, services, cfg.Port)
 
 	for {
 		select {
