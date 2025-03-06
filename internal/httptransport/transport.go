@@ -37,7 +37,7 @@ func (s *Transport) GenerateSpecServerHttp(
 			Code:        serverhttp.Ok,
 			Description: "",
 		},
-	}, err //nolint:wrapcheck
+	}, nil
 }
 
 func (s *Transport) GenerateSpecClientHttp(
@@ -60,7 +60,7 @@ func (s *Transport) GenerateSpecClientHttp(
 			Code:        serverhttp.Ok,
 			Description: "",
 		},
-	}, err //nolint:wrapcheck
+	}, nil
 }
 
 func (s *Transport) UploadSpecHttp(
