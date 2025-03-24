@@ -20,7 +20,7 @@ var (
 		GinServer:     false,
 		GorillaServer: false,
 		StdHTTPServer: false,
-		Strict:        true,
+		Strict:        false,
 		Client:        false,
 		Models:        true,
 		EmbeddedSpec:  true,
